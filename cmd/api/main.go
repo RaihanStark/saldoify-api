@@ -1,13 +1,33 @@
 package main
 
 import (
+	"log"
 	"net/http"
+	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	dbconn "github.com/raihansoftware/saldoify-api/internal/database"
+	sqlc "github.com/raihansoftware/saldoify-api/internal/database/sqlc"
 )
 
 func main() {
+	// Load environment variables
+	if err := godotenv.Load("config.env"); err != nil {
+		log.Printf("Warning: Could not load config.env file: %v", err)
+	}
+
+	// Connect to database
+	database, err := dbconn.NewConnection()
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer database.Close()
+
+	// Create Queries instance
+	queries := sqlc.New(database)
+
 	// Create Echo instance
 	e := echo.New()
 
@@ -29,6 +49,21 @@ func main() {
 		})
 	})
 
+	// Test database connection
+	e.GET("/users", func(c echo.Context) error {
+		users, err := queries.ListUsers(c.Request().Context())
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{
+				"error": "Failed to fetch users",
+			})
+		}
+		return c.JSON(http.StatusOK, users)
+	})
+
 	// Start server
-	e.Logger.Fatal(e.Start(":8080"))
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	e.Logger.Fatal(e.Start(":" + port))
 }
