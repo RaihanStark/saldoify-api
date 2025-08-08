@@ -2,12 +2,9 @@ package main
 
 import (
 	"log"
-	"net/http"
-	"os"
 
 	"github.com/joho/godotenv"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	api "github.com/raihansoftware/saldoify-api/internal/app/api"
 	dbconn "github.com/raihansoftware/saldoify-api/internal/pkg/database"
 	sqlc "github.com/raihansoftware/saldoify-api/internal/pkg/database/sqlc"
 )
@@ -28,42 +25,12 @@ func main() {
 	// Create Queries instance
 	queries := sqlc.New(database)
 
-	// Create Echo instance
-	e := echo.New()
-
-	// Middleware
-	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
-	e.Use(middleware.CORS())
-
-	// Routes
-	e.GET("/", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, map[string]string{
-			"message": "Welcome to Saldoify API",
-		})
-	})
-
-	e.GET("/health", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, map[string]string{
-			"status": "healthy",
-		})
-	})
-
-	// Test database connection
-	e.GET("/users", func(c echo.Context) error {
-		users, err := queries.ListUsers(c.Request().Context())
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, map[string]string{
-				"error": "Failed to fetch users",
-			})
-		}
-		return c.JSON(http.StatusOK, users)
-	})
+	// Create and setup server
+	server := api.NewServer(queries)
+	server.Setup()
 
 	// Start server
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
+	if err := server.Start(); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
 	}
-	e.Logger.Fatal(e.Start(":" + port))
 }
