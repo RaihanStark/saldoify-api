@@ -8,14 +8,14 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	dbconn "github.com/raihansoftware/saldoify-api/internal/database"
-	sqlc "github.com/raihansoftware/saldoify-api/internal/database/sqlc"
+	dbconn "github.com/raihansoftware/saldoify-api/internal/pkg/database"
+	sqlc "github.com/raihansoftware/saldoify-api/internal/pkg/database/sqlc"
 )
 
 func main() {
 	// Load environment variables
-	if err := godotenv.Load("config.env"); err != nil {
-		log.Printf("Warning: Could not load config.env file: %v", err)
+	if err := godotenv.Load("configs/config.env"); err != nil {
+		log.Printf("Warning: Could not load configs/config.env file: %v", err)
 	}
 
 	// Connect to database
